@@ -1,0 +1,280 @@
+# YAML Schema for Ukiryu Tool Profiles
+# This schema defines the structure for tool profile YAML files
+
+# Root: Tool Profile
+type: object
+required:
+  - name
+  - version
+  - profiles
+properties:
+  name:
+    type: string
+    description: The tool name (e.g., 'inkscape', 'ghostscript')
+
+  display_name:
+    type: string
+    description: Human-readable display name for the tool
+
+  homepage:
+    type: string
+    format: uri
+    description: URL to the tool's homepage
+
+  version:
+    type: string
+    description: The version of this profile (e.g., '1.0', '10.0')
+
+  aliases:
+    type: array
+    items:
+      type: string
+    description: Alternative names for the tool
+
+  version_detection:
+    type: object
+    description: Configuration for detecting the tool version
+    properties:
+      command:
+        type: string
+        description: Command to get version (e.g., '--version')
+
+      pattern:
+        type: string
+        description: Regex pattern to extract version number
+
+      modern_threshold:
+        type: string
+        description: Version threshold for 'modern' behavior
+
+  search_paths:
+    type: object
+    description: Platform-specific search paths for the executable
+    properties:
+      windows:
+        type: array
+        items:
+          type: string
+
+      macos:
+        type: array
+        items:
+          type: string
+
+      linux:
+        type: array
+        items:
+          type: string
+
+  timeout:
+    type: integer
+    minimum: 1
+    description: Default timeout in seconds for command execution
+
+  profiles:
+    type: array
+    description: Command execution profiles for different platforms/shells
+    items:
+      $ref: '#/definitions/command_profile'
+
+definitions:
+  command_profile:
+    type: object
+    required:
+      - name
+      - platforms
+      - shells
+    properties:
+      name:
+        type: string
+        description: Profile name (e.g., 'modern_unix', 'windows_powershell')
+
+      display_name:
+        type: string
+        description: Human-readable profile name
+
+      platforms:
+        type: array
+        items:
+          type: string
+          enum: [windows, macos, linux]
+
+      shells:
+        type: array
+        items:
+          type: string
+          enum: [bash, zsh, fish, sh, powershell, cmd]
+
+      version:
+        type: string
+        description: Version constraint (e.g., '>= 1.0')
+
+      option_style:
+        type: string
+        enum: [double_dash_equals, double_dash_space, single_dash_equals, single_dash_space, slash_colon, slash_space]
+        description: Default option style for this profile
+
+      inherits:
+        type: string
+        description: Name of parent profile to inherit from
+
+      commands:
+        type: object
+        patternProperties:
+          '.*':
+            $ref: '#/definitions/command'
+
+      post_options:
+        type: array
+        description: Options that come AFTER all input files
+        items:
+          $ref: '#/definitions/option'
+
+  command:
+    type: object
+    properties:
+      description:
+        type: string
+
+      usage:
+        type: string
+
+      arguments:
+        type: array
+        items:
+          $ref: '#/definitions/argument'
+
+      options:
+        type: array
+        items:
+          $ref: '#/definitions/option'
+
+      flags:
+        type: array
+        items:
+          $ref: '#/definitions/flag'
+
+      env_vars:
+        type: array
+        items:
+          $ref: '#/definitions/env_var'
+
+  argument:
+    type: object
+    required:
+      - name
+      - type
+    properties:
+      name:
+        type: string
+
+      type:
+        type: string
+        enum: [file, string, integer, float, symbol, boolean, uri, datetime, hash, array]
+
+      variadic:
+        type: boolean
+        description: Whether this argument can accept multiple values
+
+      position:
+        oneOf:
+          - type: integer
+          - type: string
+            enum: [last]
+        description: Position in command line (lower = earlier, or 'last' for final)
+
+      min:
+        type: integer
+        description: Minimum number of values for variadic arguments
+
+      required:
+        type: boolean
+
+      description:
+        type: string
+
+  option:
+    type: object
+    required:
+      - name
+      - cli
+    properties:
+      name:
+        type: string
+
+      type:
+        type: string
+        enum: [file, string, integer, float, symbol, boolean, uri, datetime, hash, array]
+
+      cli:
+        type: string
+        description: CLI flag (e.g., '--output=', '-o')
+
+      format:
+        type: string
+        enum: [double_dash_equals, double_dash_space, single_dash_equals, single_dash_space, slash_colon, slash_space]
+        description: How the option value is formatted
+
+      separator:
+        type: string
+        description: Separator for array values
+
+      values:
+        type: array
+        items:
+          type: [string, integer]
+        description: Valid values for symbol/enums
+
+      description:
+        type: string
+
+  flag:
+    type: object
+    required:
+      - name
+      - cli
+    properties:
+      name:
+        type: string
+
+      cli:
+        type: string
+        description: CLI flag (e.g., '--verbose', '-v')
+
+      cli_short:
+        type: string
+        description: Short form of the CLI flag
+
+      default:
+        type: boolean
+        description: Default value for the flag
+
+      description:
+        type: string
+
+  env_var:
+    type: object
+    required:
+      - name
+    properties:
+      name:
+        type: string
+        description: Environment variable name
+
+      value:
+        type: string
+        description: Static value to set
+
+      from:
+        type: string
+        description: Parameter name to get value from
+
+      platforms:
+        type: array
+        items:
+          type: string
+          enum: [windows, macos, linux]
+        description: Platforms where this env var applies
+
+      description:
+        type: string
