@@ -1,0 +1,100 @@
+= Ukiryu schemas
+
+Schemas for validating Ukiryu tool profile YAML files.
+
+// image:https://img.shields.io/badge/version-0.1.0-blue[Version]
+
+== Purpose
+
+This repository contains the YAML Schema used to validate YAML tool profiles for
+the https://github.com/ukiryu/ukiryu[Ukiryu] platform-adaptive command execution
+framework.
+
+== Schema files
+
+=== `tool-profile.schema.yaml`
+
+Validation schema for tool profiles including:
+
+* Tool metadata (name, version, aliases)
+* Version detection rules
+* Platform-specific search paths
+* Profile configurations (platforms, shells, versions)
+* Command definitions (arguments, options, flags)
+* Option styles and formatting rules
+
+
+== Validation
+
+Validate a tool profile against the schema:
+
+[source,ruby]
+----
+require 'yaml'
+require 'json-schema'
+
+schema = YAML.load_file('tool-profile.schema.yaml')
+profile = YAML.load_file('path/to/tool/profile.yaml')
+
+JSON::Validator.validate!(schema, profile)
+----
+
+== Usage in Ukiryu
+
+The schema is included as a git submodule in the Ukiryu gem and used by
+`Ukiryu::SchemaValidator`.
+
+[source,ruby]
+----
+require 'ukiryu'
+
+Ukiryu::SchemaValidator.validate_profile('path/to/profile.yaml')
+----
+
+== Structure
+
+[source]
+----
+tool-profile.schema.yaml
+├── Tool Metadata
+│   ├── name (required)
+│   ├── display_name
+│   ├── version
+│   └── aliases
+├── Version Detection
+│   ├── command
+│   ├── pattern
+│   └── modern_threshold
+├── Search Paths
+│   ├── macos
+│   ├── linux
+│   └── windows
+├── Profiles
+│   ├── platforms
+│   ├── shells
+│   ├── version
+│   └── option_style
+└── Commands
+    ├── name
+    ├── arguments
+    ├── options
+    └── flags
+----
+
+== Contributing
+
+When adding new profile features:
+
+1. Update the schema
+2. Add validation tests
+3. Update documentation
+4. Tag a new version
+
+== License
+
+The content is available as open source under the terms of the Ribose BSD
+2-Clause License.
+
+== Copyright
+
+Copyright Ribose.
