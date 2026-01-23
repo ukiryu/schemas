@@ -16,7 +16,7 @@ framework.
 
 Validation schema for tool profiles including:
 
-* Tool metadata (name, version, aliases)
+* Tool metadata (name, version, implements)
 * Version detection rules
 * Platform-specific search paths
 * Profile configurations (platforms, shells, versions)
@@ -60,7 +60,7 @@ tool-profile.schema.yaml
 │   ├── name (required)
 │   ├── display_name
 │   ├── version
-│   └── aliases
+│   └── implements
 ├── Version Detection
 │   ├── command
 │   ├── pattern

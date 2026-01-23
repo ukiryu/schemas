@@ -1,6 +1,12 @@
 # YAML Schema for Ukiryu Tool Profiles
 # This schema defines the structure for tool profile YAML files
 
+# Ukiryu Schema Version (like OpenAPI's "openapi" field)
+# Tool profiles SHOULD include this field to indicate schema version:
+#   ukiryu_schema: "1.0"  # For basic profiles
+#   ukiryu_schema: "1.1"  # For profiles with routing support
+#   ukiryu_schema: "1.2"  # For profiles with $self, components, exit_codes
+
 # Root: Tool Profile
 type: object
 required:
@@ -8,6 +14,23 @@ required:
   - version
   - profiles
 properties:
+  ukiryu_schema:
+    type: string
+    description: |
+      Ukiryu schema format version (e.g., "1.0", "1.1", "1.2").
+      Indicates which schema version this profile conforms to.
+      Recommended for all profiles, especially those using v1.1+ features.
+
+  $self:
+    type: string
+    format: uri
+    description: |
+      Self-assigned URI of this document (v1.2+).
+      Format: https://www.ukiryu.com/register/{schema_ver}/{tool-name}/{tool-ver}
+      Example: https://www.ukiryu.com/register/1.2/git/2.47
+      Serves as base URI for resolving relative references.
+      Enables future multi-document definitions.
+
   name:
     type: string
     description: The tool name (e.g., 'inkscape', 'ghostscript')
@@ -36,8 +59,13 @@ properties:
     description: Configuration for detecting the tool version
     properties:
       command:
-        type: string
-        description: Command to get version (e.g., '--version')
+        oneOf:
+          - type: string
+            description: Command to get version (e.g., '--version')
+          - type: array
+            items:
+              type: string
+            description: Command with arguments (e.g., ['-c', '1', 'localhost'])
 
       pattern:
         type: string
@@ -70,6 +98,37 @@ properties:
     type: integer
     minimum: 1
     description: Default timeout in seconds for command execution
+
+  components:
+    type: object
+    description: |
+      Registry of reusable definitions (v1.2+).
+      Components must be explicitly referenced to have effect.
+      Enables sharing common option/argument/flag definitions across commands.
+    properties:
+      options:
+        type: object
+        description: Reusable option definitions
+        additionalProperties:
+          $ref: '#/definitions/option'
+
+      flags:
+        type: object
+        description: Reusable flag definitions
+        additionalProperties:
+          $ref: '#/definitions/flag'
+
+      arguments:
+        type: object
+        description: Reusable argument definitions
+        additionalProperties:
+          $ref: '#/definitions/argument'
+
+      exit_codes:
+        type: object
+        description: Reusable exit code definitions
+        additionalProperties:
+          type: string
 
   profiles:
     type: array
@@ -118,11 +177,46 @@ definitions:
         type: string
         description: Name of parent profile to inherit from
 
-      commands:
+      routing:
         type: object
-        patternProperties:
-          '.*':
-            $ref: '#/definitions/command'
+        additionalProperties:
+          type: string
+        description: |
+          Command routing table.
+          Maps command names to their executable targets.
+          Enables multi-level hierarchies where each level has its own routing.
+          Example: { remote: git-remote, branch: git-branch, stash: git-stash }
+
+      version_requirement:
+        type: string
+        description: |
+          Semantic version requirement for this profile (v1.2+).
+          Supports semantic versioning: ">= 2.30", ">= 2.30, < 3.0", "~> 2.45.0"
+          Used to check if the installed tool version is compatible with this profile.
+
+      exit_codes:
+        type: object
+        description: |
+          Exit code definitions for this tool (v1.2+).
+          Provides machine-readable error semantics.
+        properties:
+          standard:
+            type: object
+            description: Standard exit codes (0, 1, 2, etc.)
+            additionalProperties:
+              type: string
+
+          custom:
+            type: object
+            description: Tool-specific exit codes
+            additionalProperties:
+              type: string
+
+      commands:
+        type: array
+        description: Command definitions for this profile
+        items:
+          $ref: '#/definitions/command'
 
       post_options:
         type: array
@@ -132,12 +226,55 @@ definitions:
 
   command:
     type: object
+    required:
+      - name
     properties:
+      name:
+        type: string
+        description: Command name (e.g., 'convert', 'compress')
+
       description:
         type: string
 
       usage:
         type: string
+
+      subcommand:
+        type: string
+        description: |
+          Subcommand phrase for this command.
+          - Single word: 'convert' for tools like 'magick convert'
+          - Multi-word: 'get pod' or 'storage account create' for nested subcommands
+          - Omit this field for tools that execute directly (no subcommand word)
+
+      aliases:
+        type: array
+        items:
+          type: string
+        description: |
+          Alternative names for this command.
+          Allows the command to be invoked using any of these aliases.
+          Example: ['ex', 'run'] would allow 'tool ex' and 'tool run' to invoke this command.
+
+      belongs_to:
+        type: string
+        description: |
+          Parent command this action belongs to.
+          Creates hierarchical structure: Tool → Command → Action.
+          Example: action "add" with belongs_to: "remote" means "remote add"
+          References a command name in the routing table.
+
+      cli_flag:
+        type: string
+        description: |
+          CLI flag that selects this action.
+          Used when actions are expressed as flags instead of positional args.
+          Example: git branch -d uses cli_flag: "-d" for the "delete" action.
+          If omitted, the action name is used as a positional argument.
+
+      execution_mode:
+        type: string
+        description: Execution mode for special cases
 
       arguments:
         type: array
@@ -154,10 +291,33 @@ definitions:
         items:
           $ref: '#/definitions/flag'
 
+      post_options:
+        type: array
+        items:
+          $ref: '#/definitions/option'
+
       env_vars:
         type: array
         items:
           $ref: '#/definitions/env_var'
+
+      exit_codes:
+        type: object
+        description: |
+          Exit code definitions for this command/action (v1.2+).
+          Provides machine-readable error semantics specific to this command.
+        properties:
+          standard:
+            type: object
+            description: Standard exit codes (0, 1, 2, etc.)
+            additionalProperties:
+              type: string
+
+          custom:
+            type: object
+            description: Tool-specific exit codes
+            additionalProperties:
+              type: string
 
   argument:
     type: object
@@ -180,8 +340,8 @@ definitions:
         oneOf:
           - type: integer
           - type: string
-            enum: [last]
-        description: Position in command line (lower = earlier, or 'last' for final)
+            enum: [first, last]
+        description: Position in command line ('first' for first, 'last' for final, or integer index)
 
       min:
         type: integer
@@ -212,7 +372,7 @@ definitions:
 
       format:
         type: string
-        enum: [double_dash_equals, double_dash_space, single_dash_equals, single_dash_space, slash_colon, slash_space]
+        enum: [double_dash_equals, double_dash_space, single_dash_equals, single_dash_space, slash_colon, slash_space, gs_switch, gs_definition]
         description: How the option value is formatted
 
       separator:
@@ -248,6 +408,30 @@ definitions:
       default:
         type: boolean
         description: Default value for the flag
+
+      position_constraint:
+        type: string
+        enum: [any, after_argument, between_expressions]
+        description: |
+          Positional constraint for flags that must appear in specific locations:
+          - 'any' (default): Flag can appear anywhere
+          - 'after_argument': Flag must follow a specific argument (e.g., find's --and/--or after expressions)
+          - 'between_expressions': Flag acts as an operator between expressions
+
+      position_after:
+        type: string
+        description: |
+          Required when position_constraint is 'after_argument'.
+          Specifies which argument this flag must follow.
+
+      conflicts_with:
+        type: array
+        items:
+          type: string
+        description: |
+          List of flag names that are mutually exclusive with this flag.
+          Example: ['quiet', 'silent'] for a verbose flag.
+          Used by CLI to prevent conflicting options from being used together.
 
       description:
         type: string
