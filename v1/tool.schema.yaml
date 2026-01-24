@@ -17,17 +17,17 @@ properties:
   ukiryu_schema:
     type: string
     description: |
-      Ukiryu schema format version (e.g., "1.0", "1.1", "1.2").
+      Ukiryu schema format version (now "1.0", future "1.1", "1.2").
       Indicates which schema version this profile conforms to.
-      Recommended for all profiles, especially those using v1.1+ features.
+      Recommended for all profiles, especially those using v1.0+ features.
 
   $self:
     type: string
     format: uri
     description: |
-      Self-assigned URI of this document (v1.2+).
+      Self-assigned URI of this document (v1.0+).
       Format: https://www.ukiryu.com/register/{schema_ver}/{tool-name}/{tool-ver}
-      Example: https://www.ukiryu.com/register/1.2/git/2.47
+      Example: https://www.ukiryu.com/register/1.0/git/2.47
       Serves as base URI for resolving relative references.
       Enables future multi-document definitions.
 
@@ -46,7 +46,7 @@ properties:
 
   version:
     type: string
-    description: The version of this profile (e.g., '1.0', '10.0')
+    description: The version of this profile (e.g., '1.0', '10.0', '2.47.1', '2024.01.17', '4.50')
 
   aliases:
     type: array
@@ -212,6 +212,28 @@ definitions:
             additionalProperties:
               type: string
 
+      env_var_sets:
+        type: object
+        description: |
+          Reusable named environment variable sets (v1.2+).
+          Allows defining common env var configurations that can be applied
+          to commands by referencing the set name.
+
+          Example: A "headless" set for GUI tools:
+            env_var_sets:
+              headless:
+                - name: DISPLAY
+                  value: ''
+                  platforms: [macos, linux]
+                  description: Disable display for headless operation
+
+          Commands can then reference these sets via `use_env_vars`.
+
+        additionalProperties:
+          type: array
+          items:
+            $ref: '#/definitions/env_var'
+
       commands:
         type: array
         description: Command definitions for this profile
@@ -272,9 +294,20 @@ definitions:
           Example: git branch -d uses cli_flag: "-d" for the "delete" action.
           If omitted, the action name is used as a positional argument.
 
-      execution_mode:
-        type: string
-        description: Execution mode for special cases
+      use_env_vars:
+        type: array
+        items:
+          type: string
+        description: |
+          Names of env var sets from profile-level `env_var_sets` to apply.
+          Allows commands to selectively apply predefined environment configurations.
+
+          Example:
+            use_env_vars: ['headless']
+
+          This would apply all env vars from the 'headless' set defined in
+          the profile's `env_var_sets`. The actual env vars are defined
+          per-profile since headless requirements vary by tool and platform.
 
       arguments:
         type: array
@@ -373,12 +406,29 @@ definitions:
           This is the unique identifier for the option within a command.
           MUST be unique among all options and flags in the same command.
 
+          IMPORTANT: The `cli` field must contain ONLY the bare flag name
+          without any delimiter characters (no '=', no ':', no trailing space).
+          The `assignment_delimiter` field controls how the value is attached.
+
+          Examples:
+            cli: "--export-filename"        # CORRECT (bare flag name)
+            cli: "--export-filename="       # WRONG (do NOT include '=')
+
+          When assignment_delimiter is set, the framework automatically
+          adds the appropriate delimiter when building the command:
+            - cli: "--output" with assignment_delimiter: equals   → "--output=value"
+            - cli: "-f" with assignment_delimiter: space         → "-f value"
+            - cli: "/format" with assignment_delimiter: colon    → "/format:value"
+
       assignment_delimiter:
         type: string
         enum: [equals, space, colon, none, auto]
         default: auto
         description: |
           How the option value is attached to the CLI flag.
+          IMPORTANT: When using this field, the `cli` field must NOT include
+          delimiter characters (see `cli` field documentation above).
+
           - 'equals': Value attached with '=' (--flag=value)
           - 'space': Value attached with space (--flag value)
           - 'colon': Value attached with ':' (/flag:value)
