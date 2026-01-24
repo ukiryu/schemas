@@ -161,6 +161,15 @@ properties:
     items:
       $ref: '#/definitions/command_profile'
 
+  smoke_tests:
+    type: array
+    description: |
+      Smoke tests to verify tool functionality (v1.3+).
+      These tests are run during validation to ensure the tool works correctly.
+      Each test executes a command and validates the result.
+    items:
+      $ref: '#/definitions/smoke_test'
+
 definitions:
   command_profile:
     type: object
@@ -562,3 +571,87 @@ definitions:
 
       description:
         type: string
+
+  smoke_test:
+    type: object
+    required:
+      - name
+      - command
+    properties:
+      name:
+        type: string
+        description: Unique name for this test (e.g., 'version', 'help', 'basic_convert')
+
+      description:
+        type: string
+        description: Human-readable description of what this test verifies
+
+      command:
+        oneOf:
+          - type: string
+            description: Command to run as a single string
+          - type: array
+            items:
+              type: string
+            description: Command and arguments as an array
+        description: |
+          The command to execute for testing.
+          Can be a single string or an array of arguments.
+
+      expect:
+        type: object
+        description: Expected results from the test
+        properties:
+          exit_code:
+            type: integer
+            description: Expected exit code (default: 0)
+            default: 0
+
+          output_match:
+            type: string
+            description: |
+              Regex pattern that must match stdout.
+              If specified, the test passes only if this pattern matches the command output.
+
+          output_contains:
+            type: array
+            items:
+              type: string
+            description: |
+              List of strings that must all be present in stdout.
+              If specified, the test passes only if all strings are found in the output.
+
+          stderr_match:
+            type: string
+            description: |
+              Regex pattern that must match stderr.
+              Useful for tools that output to stderr even on success.
+
+          min_runtime:
+            type: number
+            description: Minimum expected runtime in seconds
+
+          max_runtime:
+            type: number
+            description: Maximum expected runtime in seconds
+
+      timeout:
+        type: integer
+        description: |
+          Timeout in seconds for this specific test (overrides tool-level timeout).
+          If not specified, uses the tool's default timeout.
+
+      platforms:
+        type: array
+        items:
+          type: string
+          enum: [windows, macos, linux]
+        description: |
+          Platforms where this test should run.
+          If not specified, runs on all platforms.
+
+      skip_if:
+        type: string
+        description: |
+          Condition for skipping this test.
+          Examples: "version < 3.0", "platform == windows"
