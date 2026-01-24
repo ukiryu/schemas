@@ -1,0 +1,29 @@
+title: Ukiryu Schemas
+description: Schemas for validating Ukiryu tool profile YAML files
+baseurl: "/schemas"
+url: "https://ukiryu.github.io"
+
+# Theme configuration
+remote_theme: pages-themes/minimal@v0.2.0
+
+# Plugins
+plugins:
+  - jekyll-remote-theme
+  - jekyll-asciidoc
+  - jekyll-seo-tag
+
+# AsciiDoc configuration
+asciidoc: {}
+asciidoctor:
+  attributes:
+    source-highlighter: rouge
+    icons: font
+
+# Build settings
+markdown: kramdown
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - README.md
+  - .gitignore
+  - .git
