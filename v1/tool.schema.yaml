@@ -75,6 +75,31 @@ properties:
         type: string
         description: Version threshold for 'modern' behavior
 
+      man_date:
+        type: boolean
+        default: false
+        description: |
+          Use man page date as version proxy.
+          Set to true for system tools that don't support --version.
+          When true, the framework will parse the man page footer
+          to extract the date (e.g., "2020-11-24" or "January 29, 2013").
+
+          Examples: cat, head, tail, wc, cut, xargs, tee, sed (BSD)
+
+      system_tool:
+        type: boolean
+        default: false
+        description: |
+          Indicates this is a bundled OS tool (not available externally).
+          System tools are pre-installed with the operating system.
+
+          Examples: BSD awk, BSD sed, BSD grep, cat, head, tail, etc.
+
+          When true:
+          - Search paths prioritize system directories (/usr/bin, /bin)
+          - Users should not expect to download/install this tool separately
+          - Version may be date-based or tied to OS release version
+
   search_paths:
     type: object
     description: Platform-specific search paths for the executable
