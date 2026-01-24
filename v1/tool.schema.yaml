@@ -368,16 +368,29 @@ definitions:
 
       cli:
         type: string
-        description: CLI flag (e.g., '--output=', '-o')
+        description: |
+          CLI flag including prefix (e.g., '--output', '-o', '/format').
+          This is the unique identifier for the option within a command.
+          MUST be unique among all options and flags in the same command.
 
-      format:
+      assignment_delimiter:
         type: string
-        enum: [double_dash_equals, double_dash_space, single_dash_equals, single_dash_space, slash_colon, slash_space, gs_switch, gs_definition]
-        description: How the option value is formatted
+        enum: [equals, space, colon, none, auto]
+        default: auto
+        description: |
+          How the option value is attached to the CLI flag.
+          - 'equals': Value attached with '=' (--flag=value)
+          - 'space': Value attached with space (--flag value)
+          - 'colon': Value attached with ':' (/flag:value)
+          - 'none': No value (boolean-style, flag alone)
+          - 'auto': Detect based on cli prefix:
+            * '--' prefix uses 'equals' (--flag=value)
+            * '-' prefix uses 'space' (-f value)
+            * '/' prefix uses 'colon' (/format:value)
 
       separator:
         type: string
-        description: Separator for array values
+        description: Separator for array values (e.g., ',', ';', ' ')
 
       values:
         type: array
@@ -399,7 +412,18 @@ definitions:
 
       cli:
         type: string
-        description: CLI flag (e.g., '--verbose', '-v')
+        description: |
+          CLI flag including prefix (e.g., '--verbose', '-v', '/VERBOSE').
+          This is the unique identifier for the flag within a command.
+          MUST be unique among all options and flags in the same command.
+
+      assignment_delimiter:
+        type: string
+        enum: [none]
+        default: none
+        description: |
+          Flags always use 'none' (no value assignment).
+          The flag is either present or absent.
 
       cli_short:
         type: string
@@ -411,10 +435,11 @@ definitions:
 
       position_constraint:
         type: string
-        enum: [any, after_argument, between_expressions]
+        enum: [any, prefix, after_argument, between_expressions]
         description: |
           Positional constraint for flags that must appear in specific locations:
           - 'any' (default): Flag can appear anywhere
+          - 'prefix': Flag must appear immediately after subcommand (before any options)
           - 'after_argument': Flag must follow a specific argument (e.g., find's --and/--or after expressions)
           - 'between_expressions': Flag acts as an operator between expressions
 
