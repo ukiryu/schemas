@@ -58,6 +58,50 @@ properties:
     type: object
     description: Configuration for detecting the tool version
     properties:
+      methods:
+        type: array
+        description: |
+          Version detection methods with fallback hierarchy (v1.3+).
+          Methods are tried in order; first successful result is used.
+          NOT mutually exclusive - they work together as fallbacks.
+        items:
+          type: object
+          required:
+            - type
+          properties:
+            type:
+              type: string
+              enum: [command, man_page]
+              description: |
+                Detection method type:
+                - "command": Run tool with version command
+                - "man_page": Parse man page .Dd date
+
+            command:
+              oneOf:
+                - type: string
+                  description: Command to get version (e.g., '--version')
+                - type: array
+                  items:
+                    type: string
+                  description: Command with arguments
+
+            pattern:
+              type: string
+              description: Regex pattern to extract version number
+
+            paths:
+              type: object
+              description: Platform-specific man page paths (for man_page type)
+              properties:
+                macos:
+                  type: string
+                linux:
+                  type: string
+                windows:
+                  type: string
+
+      # Legacy properties (v1.0-v1.2) - still supported for backward compatibility
       command:
         oneOf:
           - type: string
@@ -75,16 +119,21 @@ properties:
         type: string
         description: Version threshold for 'modern' behavior
 
+      source:
+        type: string
+        enum: [command, man]
+        default: command
+        description: |
+          Version source (legacy v1.0-v1.2).
+          For new profiles, use the `methods` array instead.
+
       man_date:
         type: boolean
         default: false
+        deprecated: true
         description: |
-          Use man page date as version proxy.
-          Set to true for system tools that don't support --version.
-          When true, the framework will parse the man page footer
-          to extract the date (e.g., "2020-11-24" or "January 29, 2013").
-
-          Examples: cat, head, tail, wc, cut, xargs, tee, sed (BSD)
+          [DEPRECATED] Use `methods` array with `man_page` type instead.
+          This field is maintained for backward compatibility.
 
       system_tool:
         type: boolean
