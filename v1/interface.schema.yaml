@@ -1,0 +1,164 @@
+# YAML Schema for Ukiryu Interface Definitions
+# This schema defines the structure for interface YAML files
+
+# Root: Interface Definition
+type: object
+required:
+  - name
+  - version
+  - commands
+properties:
+  ukiryu_schema:
+    type: string
+    description: |
+      Ukiryu schema format version (e.g., "1.0").
+      Indicates which schema version this interface conforms to.
+
+  name:
+    type: string
+    description: |
+      Interface name (e.g., 'grep', 'tar', 'wget').
+      This identifies the abstract interface that multiple tools can implement.
+
+  version:
+    type: string
+    description: |
+      Interface version (e.g., '1.0', '2.0').
+      Indicates the version of this interface definition.
+
+  display_name:
+    type: string
+    description: Human-readable display name for the interface
+
+  description:
+    type: string
+    description: |
+      Description of what this interface defines.
+      Should explain the contract and purpose of the interface.
+
+  commands:
+    type: array
+    description: |
+      Command definitions for this interface.
+      These define the contract that implementing tools must support.
+    items:
+      $ref: '#/definitions/interface_command'
+
+definitions:
+  interface_command:
+    type: object
+    required:
+      - name
+      - display_name
+      - description
+    properties:
+      name:
+        type: string
+        description: Command name (e.g., 'search', 'create', 'download')
+
+      display_name:
+        type: string
+        description: Human-readable command name
+
+      description:
+        type: string
+        description: Description of what this command does
+
+      required:
+        type: boolean
+        description: Whether this command is required for interface compliance
+
+      arguments:
+        type: array
+        description: Argument definitions for this command
+        items:
+          $ref: '#/definitions/interface_argument'
+
+      options:
+        type: array
+        description: Option definitions for this command
+        items:
+          $ref: '#/definitions/interface_option'
+
+      flags:
+        type: array
+        description: Flag definitions for this command
+        items:
+          $ref: '#/definitions/interface_flag'
+
+      abstract:
+        type: boolean
+        default: false
+        description: |
+          If true, this interface action is a namespace-only grouping and
+          cannot be executed directly.
+
+      default_action:
+        type: string
+        description: |
+          Name of the default sub-action to execute when this interface
+          action is invoked without a sub-action.
+
+  interface_argument:
+    type: object
+    required:
+      - name
+      - type
+    properties:
+      name:
+        type: string
+        description: Argument name
+
+      type:
+        type: string
+        enum: [file, string, integer, float, symbol, boolean, uri, datetime, hash, array]
+
+      required:
+        type: boolean
+        description: Whether this argument is required
+
+      variadic:
+        type: boolean
+        description: Whether this argument can accept multiple values
+
+      min:
+        type: integer
+        description: Minimum number of values for variadic arguments
+
+      description:
+        type: string
+        description: Description of this argument
+
+  interface_option:
+    type: object
+    required:
+      - name
+    properties:
+      name:
+        type: string
+        description: Option name (without CLI prefix)
+
+      type:
+        type: string
+        enum: [file, string, integer, float, symbol, boolean, uri, datetime, hash, array]
+
+      required:
+        type: boolean
+        description: Whether this option is required
+
+      description:
+        type: string
+        description: Description of this option
+
+  interface_flag:
+    type: object
+    required:
+      - name
+    properties:
+      name:
+        type: string
+        description: Flag name (without CLI prefix)
+
+      description:
+        type: string
+        description: Description of this flag
