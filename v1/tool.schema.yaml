@@ -12,7 +12,12 @@ type: object
 required:
   - name
   - version
-  - profiles
+  # Accept either 'profiles' (legacy) or 'execution_profiles' (v1)
+anyOf:
+  - required:
+      - profiles
+  - required:
+      - execution_profiles
 properties:
   ukiryu_schema:
     type: string
