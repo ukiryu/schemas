@@ -12,12 +12,7 @@ type: object
 required:
   - name
   - version
-  # Accept either 'profiles' (legacy) or 'execution_profiles' (v1)
-anyOf:
-  - required:
-      - profiles
-  - required:
-      - execution_profiles
+  - execution_profiles
 properties:
   ukiryu_schema:
     type: string
@@ -203,7 +198,7 @@ properties:
         additionalProperties:
           type: string
 
-  profiles:
+  execution_profiles:
     type: array
     description: Command execution profiles for different platforms/shells
     items:
